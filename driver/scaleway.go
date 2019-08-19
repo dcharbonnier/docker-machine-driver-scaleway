@@ -40,6 +40,7 @@ type Driver struct {
 	CommercialType string
 	Region         string
 	name           string
+	Name           string
 	image          string
 	bootscript     string
 	ip             string
@@ -93,7 +94,11 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) (err error) {
 	}
 	d.CommercialType = flags.String("scaleway-commercial-type")
 	d.Region = flags.String("scaleway-region")
-	d.name = flags.String("scaleway-name")
+	if (flags.String("scaleway-name") != "") {
+		d.name = flags.String("scaleway-name")
+	} else {
+		d.name = d.BaseDriver.MachineName
+	}
 	d.image = flags.String("scaleway-image")
 	d.bootscript = flags.String("scaleway-bootscript")
 	d.ip = flags.String("scaleway-ip")
@@ -107,6 +112,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) (err error) {
 // NewDriver returns a new driver
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
+		Name: hostName,
 		BaseDriver: &drivers.BaseDriver{},
 	}
 }
@@ -355,7 +361,8 @@ func (d *Driver) Remove() (err error) {
 	if err != nil {
 		return
 	}
-	errRemove := cl.PostServerAction(d.ServerID, "terminate")
+
+	errRemove := cl.DeleteServer(d.ServerID)
 	for {
 		_, err = cl.GetServer(d.ServerID)
 		if err != nil {
